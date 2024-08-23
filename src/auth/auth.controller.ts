@@ -1,7 +1,15 @@
-import { Body, Controller, Get, Post } from '@nestjs/common';
+import { Body, Controller, Get, Post, Req, UseGuards } from '@nestjs/common';
 import { JwtDto, SignInDto } from './auth.dto';
-import { ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiExtraModels,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
+import { AuthGuard } from './auth.guard';
+import { Request } from 'express';
+import { ApiGenericResponse, StatusMessage } from '../app.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -9,12 +17,26 @@ export class AuthController {
 
   @Post()
   @ApiTags('auth')
-  async signIn(@Body() data: SignInDto): Promise<StatusMessage<JwtDto>> {
+  @ApiExtraModels(StatusMessage<JwtDto>)
+  async signIn(@Body() data: SignInDto) {
     const user = await this.authService.signIn(data);
 
     return {
       data: user,
       message: 'User signed in successfully',
+      success: true,
+    };
+  }
+
+  @Get()
+  @ApiTags('auth')
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @ApiGenericResponse(JwtDto)
+  async validateJwt(@Req() req: Request) {
+    return {
+      data: req.user,
+      message: 'Token is valid',
       success: true,
     };
   }
